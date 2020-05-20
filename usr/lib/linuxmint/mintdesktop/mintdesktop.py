@@ -45,6 +45,8 @@ class MintDesktop:
             self.marco_section.hide()
         self.metacity_section.hide()
         self.compiz_section.hide()
+        if self.i3wm_section is not None:
+            self.i3wm_section.hide()
         if "marco" in wm:
             self.marco_section.show()
         elif "metacity" in wm:
@@ -52,6 +54,8 @@ class MintDesktop:
         elif "compiz" in wm and os.path.exists("/usr/bin/ccsm"):
             self.compiz_section.show()
             self.compiz_reset_button.set_sensitive(os.path.exists(self.compiz_path))
+        elif "i3wm" in wm:
+            self.i3wm_section.show()
 
     def help_button_clicked(self, widget):
         Popen(["xdg-open", "help:mintdesktop"])
@@ -165,6 +169,9 @@ class MintDesktop:
             options.append(["compiz", _("Compiz")])
         if os.path.exists("/usr/bin/awesome"):
             options.append(["awesome", _("Awesome")])
+        if os.path.exists("/usr/bin/i3"):
+            if compton:
+                options.append(["i3wm", _("i3 + Compton")])
         combo = GSettingsComboBox(_("Window Manager"), "com.linuxmint.desktop", wm_key, options, size_group=size_group)
         combo.set_tooltip_text(_("Click on the help button for more information about window managers.\nUse the 'wm-recovery' command to switch back to the default window manager.\nUse the 'wm-detect' command to check which window manager is running."))
         combo.content_widget.connect("changed", self.wm_changed)
@@ -177,6 +184,9 @@ class MintDesktop:
         csd_button_options = []
         csd_button_options.append(["menu:minimize,maximize,close", _("Traditional style (Right)")])
         csd_button_options.append(["close,minimize,maximize:menu", _("Mac style (Left)")])
+
+        i3wm_csd_button_options = csd_button_options.copy()
+        i3wm_csd_button_options.append(["menu:", _("No button at all")])
 
         if self.de_is_mate:
             options = []
@@ -196,6 +206,12 @@ class MintDesktop:
         self.metacity_section = page.add_section(_("Metacity settings"))
         self.metacity_section.add_row(GSettingsSwitch(_("Use system font in titlebar"), "org.gnome.desktop.wm.preferences", "titlebar-uses-system-font"))
         self.metacity_section.add_row(GSettingsComboBox(_("Buttons layout:"), "org.gnome.desktop.wm.preferences", "button-layout", button_options, size_group=size_group))
+
+        if self.de_is_mate:
+            self.i3wm_section = page.add_section(_("i3 settings"))
+            self.i3wm_section.add_row(GSettingsComboBox(_("Buttons layout (CSD windows):"), "org.mate.interface", "gtk-decoration-layout", i3wm_csd_button_options, size_group=size_group))
+        else:
+            self.i3wm_section = None
 
         self.compiz_section = page.add_section(_("Compiz settings"))
 

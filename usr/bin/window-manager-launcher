@@ -34,7 +34,7 @@ else:
 p = subprocess.Popen(['ps', '-u', str(os.getuid())], stdout=subprocess.PIPE)
 out, err = p.communicate()
 processes_found = False
-for process in ['compton', "marco", "xfwm4", "compiz", "metacity", "openbox", "awesome" ]:
+for process in [ "compton", "marco", "xfwm4", "compiz", "metacity", "openbox", "awesome", "i3" ]:
     for line in out.splitlines():
         pname = line.decode('utf-8').split()[-1]
         if process in pname:
@@ -104,3 +104,8 @@ elif wm == "awesome":
     subprocess.Popen(["awesome"])
     if current_desktop == "MATE":  # The mate panel seems to move up a bit when starting awesome
         subprocess.Popen(["mate-panel", "--replace"])  # this seems to fix this issue
+elif wm == "i3wm":
+    subprocess.Popen(["i3"])
+    time.sleep(2)
+    subprocess.Popen(["compton", "--backend", "glx", "--vsync", "opengl-swc"])
+
