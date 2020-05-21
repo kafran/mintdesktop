@@ -16,13 +16,13 @@ settings = Gio.Settings("com.linuxmint.desktop")
 
 # Detect which DE is running
 if "XDG_CURRENT_DESKTOP" not in os.environ:
-    print ("window-manager-launcher: XDG_CURRENT_DESKTOP is not set! Exiting..")
+    print("window-manager-launcher: XDG_CURRENT_DESKTOP is not set! Exiting..")
     sys.exit(0)
 
 current_desktop = os.environ["XDG_CURRENT_DESKTOP"]
 
 if current_desktop not in ["MATE", "XFCE"]:
-    print ("Current desktop %s is not supported." % current_desktop)
+    print("Current desktop %s is not supported." % current_desktop)
     sys.exit(0)
 
 if current_desktop == "MATE":
@@ -31,24 +31,24 @@ else:
     wm = settings.get_string("xfce-window-manager")
 
 # Kill all compositors/managers first
-p = subprocess.Popen(['ps', '-u', str(os.getuid())], stdout=subprocess.PIPE)
+p = subprocess.Popen(["ps", "-u", str(os.getuid())], stdout=subprocess.PIPE)
 out, err = p.communicate()
 processes_found = False
-for process in [ "compton", "marco", "xfwm4", "compiz", "metacity", "openbox", "awesome", "i3" ]:
+for process in ["compton", "marco", "xfwm4", "compiz", "metacity", "openbox", "awesome", "mate-panel", "i3"]:
     for line in out.splitlines():
-        pname = line.decode('utf-8').split()[-1]
+        pname = line.decode("utf-8").split()[-1]
         if process in pname:
             pid = int(line.split(None, 1)[0])
-            print ("Killing pid %d (%s)" % (pid, pname))
+            print("Killing pid %d (%s)" % (pid, pname))
             try:
                 os.kill(pid, signal.SIGKILL)
             except Exception as e:
-                print ("Failed to kill process %d (%s): %s" % (pid, pname, e))
+                print("Failed to kill process %d (%s): %s" % (pid, pname, e))
             processes_found = True
 
-if (processes_found):
+if processes_found:
     # avoid race conditions before launching new WMs
-    print ("Waiting 0.2 seconds...")
+    print("Waiting 0.2 seconds...")
     time.sleep(0.2)
 
 if wm == "marco":
@@ -99,13 +99,19 @@ elif wm == "openbox-compton":
     time.sleep(2)
     subprocess.Popen(["compton", "--backend", "glx", "--vsync", "opengl-swc"])
 elif wm == "awesome":
-    # subprocess.call(["killall", "marco", "xfwm4", "compiz", "metacity", "openbox", "awesome"]) # Kill all other window managers that might possibly still be running
-    # time.sleep(0.1) # Wait some time until really all other window managers are killed otherwise awesome won't start up
     subprocess.Popen(["awesome"])
-    if current_desktop == "MATE":  # The mate panel seems to move up a bit when starting awesome
-        subprocess.Popen(["mate-panel", "--replace"])  # this seems to fix this issue
-elif wm == "i3wm":
+elif wm == "i3":
+    settings = Gio.Settings("org.mate.session")
+    settings.set_strv("required-components-list", ["windowmanager"])
+    settings = Gio.Settings("org.mate.background")
+    settings.set_boolean("show-desktop-icons", False)
     subprocess.Popen(["i3"])
     time.sleep(2)
     subprocess.Popen(["compton", "--backend", "glx", "--vsync", "opengl-swc"])
 
+if current_desktop == "MATE" and wm != "i3":
+    settings = Gio.Settings("org.mate.session")
+    settings.reset("required-components-list")
+    settings = Gio.Settings("org.mate.background")
+    settings.reset("show-desktop-icons")
+    subprocess.Popen(["mate-panel", "--replace"])
